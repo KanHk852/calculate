@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shipping Cost Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
+        input, select, button {
+            margin-top: 5px;
+            padding: 8px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Shipping Cost Calculator</h1>
+    <form id="shippingForm">
+        <label for="name">ชื่อ</label>
+        <input type="text" id="name" placeholder="กรอกชื่อของคุณ" required>
+
+        <label for="packageCount">จำนวนพัสดุ (กล่อง)</label>
+        <input type="number" id="packageCount" min="1" placeholder="กรอกจำนวนพัสดุ" required>
+
+        <label for="weight">น้ำหนักรวม (กิโลกรัม)</label>
+        <input type="number" id="weight" step="0.01" placeholder="กรอกน้ำหนักรวม" required>
+
+        <label for="shippingMethod">วิธีการขนส่ง</label>
+        <select id="shippingMethod" required>
+            <option value="">-- เลือกวิธีการขนส่ง --</option>
+            <option value="air">ขนส่งทางอากาศ</option>
+            <option value="sea">ขนส่งทางเรือ</option>
+        </select>
+
+        <label for="itemType">ประเภทสินค้า</label>
+        <select id="itemType" required>
+            <option value="">-- เลือกประเภทสินค้า --</option>
+            <option value="food">ขนม/อาหาร</option>
+            <option value="toys">ของเล่น</option>
+            <option value="art">งานศิลปะ/รองเท้า/เสื้อผ้าแฟชั่น</option>
+            <option value="luxury">สินค้าแบรนด์เนม</option>
+        </select>
+
+        <button type="button" onclick="calculateCost()">คำนวณค่าส่งสินค้า</button>
+    </form>
+
+    <div id="result" class="result" style="display: none;">
+        <h2>ผลการคำนวณ</h2>
+        <p id="resultText"></p>
+    </div>
+
+    <script>
+        function calculateCost() {
+            const weight = parseFloat(document.getElementById("weight").value);
+            const packageCount = parseInt(document.getElementById("packageCount").value, 10);
+            const shippingMethod = document.getElementById("shippingMethod").value;
+            const itemType = document.getElementById("itemType").value;
+
+            if (isNaN(weight) || isNaN(packageCount) || !shippingMethod || !itemType) {
+                alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+                return;
+            }
+
+            // เรทราคา
+            const rates = {
+                air: {
+                    food: 550,
+                    toys: 750,
+                    art: 1200,
+                    luxury: 1700
+                },
+                sea: {
+                    food: 450,
+                    toys: 550,
+                    art: 1000,
+                    luxury: 1500
+                }
+            };
+
+            const rate = rates[shippingMethod][itemType];
+
+            // คำนวณน้ำหนัก
+            const integerPart = Math.floor(weight); // ส่วนจำนวนเต็ม
+            const decimalPart = weight - integerPart; // ส่วนทศนิยม
+
+            let shippingCost = 0;
+
+            if (decimalPart < 0.5) {
+                // หากจุดทศนิยม < 0.50 คูณเรทกับจุดทศนิยม
+                shippingCost = integerPart * rate + (decimalPart * rate);
+            } else {
+                // หากจุดทศนิยม >= 0.50 ปัดขึ้น
+                shippingCost = Math.ceil(weight) * rate;
+            }
+
+            // ตารางค่า EMS
+            const emsRates = [
+                { maxWeight: 1, cost: 67 },
+                { maxWeight: 1.5, cost: 82 },
+                { maxWeight: 2, cost: 97 },
+                { maxWeight: 2.5, cost: 122 },
+                { maxWeight: 3, cost: 137 },
+                { maxWeight: 3.5, cost: 177 },
+                { maxWeight: 4, cost: 197 },
+                { maxWeight: 4.5, cost: 217 },
+                { maxWeight: 5, cost: 242 },
+                { maxWeight: 5.5, cost: 267 },
+                { maxWeight: 6, cost: 292 },
+                { maxWeight: 6.5, cost: 317 },
+                { maxWeight: 7, cost: 342 },
+                { maxWeight: 7.5, cost: 367 },
+                { maxWeight: 8, cost: 397 },
+                { maxWeight: 8.5, cost: 427 },
+                { maxWeight: 9, cost: 457 }
+            ];
+
+            // คำนวณค่า EMS
+            let emsCost = 0;
+            for (const rate of emsRates) {
+                if (weight <= rate.maxWeight) {
+                    emsCost = rate.cost;
+                    break;
+                }
+            }
+
+            // คำนวณค่าธรรมเนียมฝากสินค้า
+            const storageFee = packageCount * 100;
+
+            const totalCost = shippingCost + emsCost + storageFee;
+
+            // แสดงผล
+            const resultDiv = document.getElementById("result");
+            const resultText = document.getElementById("resultText");
+
+            resultText.innerHTML = `
+                ชื่อ: ${document.getElementById("name").value}<br>
+                จำนวนพัสดุ: ${packageCount} กล่อง<br>
+                น้ำหนักรวม: ${weight.toFixed(2)} กก.<br>
+                วิธีการขนส่ง: ${shippingMethod === "air" ? "ขนส่งทางอากาศ" : "ขนส่งทางเรือ"}<br>
+                ประเภทสินค้า: ${itemType}<br>
+                ค่าขนส่ง: ${shippingCost.toLocaleString()} บาท<br>
+                ค่า EMS: ${emsCost.toLocaleString()} บาท<br>
+                ค่าธรรมเนียมฝากสินค้า: ${storageFee.toLocaleString()} บาท<br>
+                ค่าใช้จ่ายรวม: ${totalCost.toLocaleString()} บาท
+            `;
+
+            resultDiv.style.display = "block";
+        }
+    </script>
+</body>
+</html>
